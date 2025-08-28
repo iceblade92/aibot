@@ -13,10 +13,13 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
-# Error handeling if no argument given to konsole
+# Error handeling if no argument given to console
 if len(sys.argv) < 2:
     print("You forgot to add a question with quotes")
     sys.exit(1)
+elif len(sys.argv) > 2:
+    print("Too many arguments given")
+    sys.exit(3)
 
 # Generates content using Gemini api and display tokens used
 def main():
