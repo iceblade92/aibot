@@ -18,7 +18,7 @@ client = genai.Client(api_key=api_key)
 if len(sys.argv) < 2:
     print("You forgot to add a question with quotes")
     sys.exit(1)
-elif len(sys.argv) > 2:
+elif len(sys.argv) > 3:
     print("Too many arguments given")
     sys.exit(3)
 
@@ -34,9 +34,14 @@ def main():
     usage_metadata = response.usage_metadata
     prompt_tokens = usage_metadata.prompt_token_count
     response_tokens = usage_metadata.candidates_token_count
-    
-    print(response.text)
-    print(f"Prompt tokens: {prompt_tokens}\nResponse tokens: {response_tokens}")
+    if len(sys.argv) == 3:
+        if sys.argv[2] == "--verbose":
+            print(f"User prompt: {response.text}")
+            print(f"Prompt tokens: {prompt_tokens}")
+            print(f"Response tokens: {response_tokens}")
+    else:
+        print(response.text)
+
 
 if __name__ == "__main__":
     main()
