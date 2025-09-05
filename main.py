@@ -3,9 +3,12 @@ import sys
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from config import system_prompt, model_name
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
+
+
 
 # Error handeling if apikey is wrong or broken
 if not api_key:
@@ -28,8 +31,9 @@ def main():
     types.Content(role="user", parts=[types.Part(text=sys.argv[1])]),
 ]
     response = client.models.generate_content(
-        model = "gemini-2.0-flash-001",
-        contents = messages
+        model=model_name,
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt),
 )
     usage_metadata = response.usage_metadata
     prompt_tokens = usage_metadata.prompt_token_count
