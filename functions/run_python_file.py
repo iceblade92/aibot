@@ -1,6 +1,21 @@
 import os
 import sys
 import subprocess
+from google.genai import types
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description=f"Runs a python file at selected path.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Second description witch i dont know why it needs so this is a test string.",
+            ),
+        },
+    ),
+)
 
 def run_python_file(working_directory, file_path, args=[]):
     fullpath = os.path.join(working_directory, file_path)

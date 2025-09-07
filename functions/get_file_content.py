@@ -1,5 +1,20 @@
 import os
+from google.genai import types
 from config import MAX_CHARS
+
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description=f"Opens a file and read the first {MAX_CHARS} then returns a string of its content or summary if over {MAX_CHARS}.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Second description witch i dont know why it needs so this is a test string.",
+            ),
+        },
+    ),
+)
 
 def get_file_content(working_directory, file_path):
     fullpath = os.path.join(working_directory, file_path)

@@ -5,10 +5,14 @@ from google.genai import types
 from dotenv import load_dotenv
 from config import system_prompt, model_name
 
-# import schemas
+# Schemas
 from functions.get_files_info import schema_get_files_info
+from functions.get_file_content import schema_get_file_content
+from functions.run_python_file import schema_run_python_file
+from functions.write_file import schema_write_file
 
-# import runtime functions (where they’re implemented)
+
+# Functions 
 from functions.get_files_info import get_files_info
 from functions.get_file_content import get_file_content
 from functions.write_file import write_file
@@ -33,7 +37,10 @@ elif len(sys.argv) > 3:
 # Declerations for ai use of comands/rules
 available_functions = types.Tool(
     function_declarations=[# Extra schemas go inside  this braket 
-        schema_get_files_info,        
+        schema_get_files_info,
+        schema_get_file_content,
+        schema_run_python_file,
+        schema_write_file,        
     ]
 )
 
@@ -41,9 +48,9 @@ available_functions = types.Tool(
 WORKING_DIR = "."
 DISPATCH = {# Extra file functions in this curly braket
     "get_files_info": lambda args: get_files_info(WORKING_DIR, args.get("directory", ".")),
-    "get_file_content": lambda args: get_file_content(WORKING_DIR, args["path"]),
-    "write_file": lambda args: write_file(WORKING_DIR, args["path"], args["content"]),
-    "run_python_file": lambda args: run_python_file(WORKING_DIR, args["code"]),
+    "get_file_content": lambda args: get_file_content(WORKING_DIR, args["file_path"]),
+    "write_file": lambda args: write_file(WORKING_DIR, args["file_path"], args["content"]),
+    "run_python_file": lambda args: run_python_file(WORKING_DIR, args["file_path"]),
 }
 
 # Generates content using Gemini api and display tokens used
@@ -71,6 +78,8 @@ def main():
 
     if calls:
         for call in calls:
+            if call.args == []:
+                print(f"Calling function: {call.name}")
             print(f"Calling function: {call.name}({call.args})")
             handler = DISPATCH.get(call.name)
             if handler:
