@@ -1,3 +1,4 @@
+WORKING_DIR = "./calculator"
 MAX_CHARS = 10000
 quote = "I'M JUST A ROBOT"
 system_prompt = """

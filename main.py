@@ -3,7 +3,7 @@ import sys
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-from config import system_prompt, model_name
+from config import system_prompt, model_name, WORKING_DIR
 
 # Schemas
 from functions.get_files_info import schema_get_files_info
@@ -34,7 +34,7 @@ elif len(sys.argv) > 3:
     print("Too many arguments given")
     sys.exit(3)
 
-# Declerations for ai use of comands/rules
+# Declerations for ai functions avalible to it
 available_functions = types.Tool(
     function_declarations=[# Extra schemas go inside  this braket 
         schema_get_files_info,
@@ -45,7 +45,6 @@ available_functions = types.Tool(
 )
 
 # Directory checking and rules
-WORKING_DIR = "."
 DISPATCH = {# Extra file functions in this curly braket
     "get_files_info": lambda args: get_files_info(WORKING_DIR, args.get("directory", ".")),
     "get_file_content": lambda args: get_file_content(WORKING_DIR, args["file_path"]),
@@ -69,24 +68,51 @@ def main():
     prompt_tokens = usage_metadata.prompt_token_count
     response_tokens = usage_metadata.candidates_token_count
     calls = getattr(response, "function_calls", []) or []
+    verbose = len(sys.argv) == 3 and sys.argv[2] == "--verbose"
 
-    if len(sys.argv) == 3 and sys.argv[2] == "--verbose":
+    if verbose:
             print(f"User prompt: {response.text}")
             print(f"Prompt tokens: {prompt_tokens}")
             print(f"Response tokens: {response_tokens}")
-            return
-
     if calls:
         for call in calls:
-            if call.args == []:
-                print(f"Calling function: {call.name}")
-            print(f"Calling function: {call.name}({call.args})")
-            handler = DISPATCH.get(call.name)
-            if handler:
-                _ = handler(call.args)
+            function_call_result = call_function(call, verbose)
+            if not function_call_result.parts[0].function_response.response:
+                raise Exception("Missing function response")
+            if verbose:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
     else:
         print(response.text)
 
+def call_function(function_call_part, verbose=False):
+    if function_call_part.name not in DISPATCH:
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_call_part.name,
+                    response={"error": f"Unknown function: {function_call_part.name}"},
+        )
+    ],
+)
+
+    some_function = DISPATCH[function_call_part.name]
+    function_result = some_function(function_call_part.args)
+
+    if verbose == True:
+        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    else:
+        print(f" - Calling function: {function_call_part.name}")
+
+    return types.Content(
+        role="tool",
+        parts=[
+            types.Part.from_function_response(
+                name=function_call_part.name,
+                response={"result": function_result},
+        )
+    ],
+)
 
 if __name__ == "__main__":
     main()
