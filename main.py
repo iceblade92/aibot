@@ -57,32 +57,40 @@ def main():
     messages = [
     types.Content(role="user", parts=[types.Part(text=sys.argv[1])]),
 ]
-    response = client.models.generate_content(
-        model=model_name,
-        contents=messages,
-        config=types.GenerateContentConfig(tools=[available_functions],system_instruction=system_prompt),
-        
-)
-    
-    usage_metadata = response.usage_metadata
-    prompt_tokens = usage_metadata.prompt_token_count
-    response_tokens = usage_metadata.candidates_token_count
-    calls = getattr(response, "function_calls", []) or []
     verbose = len(sys.argv) == 3 and sys.argv[2] == "--verbose"
 
-    if verbose:
-            print(f"User prompt: {response.text}")
-            print(f"Prompt tokens: {prompt_tokens}")
-            print(f"Response tokens: {response_tokens}")
-    if calls:
-        for call in calls:
-            function_call_result = call_function(call, verbose)
-            if not function_call_result.parts[0].function_response.response:
-                raise Exception("Missing function response")
+    for i in range(20):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=messages,
+                config=types.GenerateContentConfig(tools=[available_functions],system_instruction=system_prompt),
+        )
+            if response.text:
+                print(response.text)
+                break
+            for cand in response.candidates:
+                messages.append(cand.content)
+                for part in cand.content.parts:
+                    fc = getattr(part, "function_call", None)
+                    if fc:
+                        if verbose:
+                            print(f"model called: {fc.name} with args {fc.args}")
+                        tool_msg = call_function(fc, verbose)
+                        messages.append(tool_msg)               
+            usage_metadata = response.usage_metadata
+            prompt_tokens = usage_metadata.prompt_token_count
+            response_tokens = usage_metadata.candidates_token_count
+
             if verbose:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
-    else:
-        print(response.text)
+                    print(f"User prompt: {response.text}")
+                    print(f"Prompt tokens: {prompt_tokens}")
+                    print(f"Response tokens: {response_tokens}")
+
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            break
+
 
 def call_function(function_call_part, verbose=False):
     if function_call_part.name not in DISPATCH:
